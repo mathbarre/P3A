@@ -40,11 +40,10 @@ class Preprocess():
             self.var[name] = np.var(y.loc[X['Functional'] == name,'SalePrice'])
         return self
     
-    def transform(self,X,test = False):
-        X['MoSold'] = pd.Series(X['MoSold'],dtype = object)
-        X['MSSubClass'] = pd.Series(X['MSSubClass'],dtype = object)
+    def transform(self,train,X_cat,test = False):
+        X = train.copy()
         
-        
+        """
         X.drop('MoSold',axis = 1,inplace = True)
         X.drop('MiscVal',axis = 1,inplace = True)
         X.drop('MiscFeature',axis = 1,inplace = True)  
@@ -72,7 +71,7 @@ class Preprocess():
         X.drop('Street',axis = 1,inplace = True)
         X.drop('MSSubClass',axis = 1,inplace = True)
         X.drop('LotFrontage',axis = 1,inplace = True)
-        
+        """
         X.loc[X['ExterQual'] == 'Ex','ExterQual'] = 5
         X.loc[X['ExterQual'] == 'Gd','ExterQual'] = 4
         X.loc[X['ExterQual'] == 'TA','ExterQual'] = 3
@@ -110,44 +109,15 @@ class Preprocess():
             self.scaler.fit(X_numeric)
             
         X_numeric = pd.DataFrame(self.scaler.transform(X_numeric))
-        
-        X_cat =  X.select_dtypes(include= ['object'])
-        
-        #X_cat.loc[X_cat['PoolQC'].isnull(),'PoolQC'] = 'No'
-        #X_cat.loc[X_cat['Fence'].isnull(),'Fence'] = 'No'
-        #X_cat.loc[X_cat['MiscFeature'].isnull(),'MiscFeature'] = 'No'
-        X_cat.loc[X_cat['GarageCond'].isnull(),'GarageCond'] = 'No'
-        X_cat.loc[X_cat['GarageQual'].isnull(),'GarageQual'] = 'No'
-        #X_cat.loc[X_cat['GarageFinish'].isnull(),'GarageFinish'] = 'No'
-        #X_cat.loc[X_cat['GarageType'].isnull(),'GarageType'] = 'No'
-        #X_cat.loc[X_cat['FireplaceQu'].isnull(),'FireplaceQu'] = 'No'
-        #X_cat.loc[X_cat['BsmtFinType2'].isnull(),'BsmtFinType2'] = 'No'
-        #X_cat.loc[X_cat['BsmtFinType1'].isnull(),'BsmtFinType1'] = 'No'
-        X_cat.loc[X_cat['BsmtExposure'].isnull(),'BsmtExposure'] = 'No'
-        X_cat.loc[X_cat['BsmtCond'].isnull(),'BsmtCond'] = 'No'
-        X_cat.loc[X_cat['BsmtQual'].isnull(),'BsmtQual'] = 'No'
-        #X_cat.loc[X_cat['Alley'].isnull(),'Alley'] = 'No'
-        
-        
-        summary_cat = (X_cat.describe())
-        
-        for a in list(X_cat.columns) :
-            X_cat.loc[X_cat[a].isnull(),a] = summary_cat[[a]].loc['top',a]
-            
-            
-        X_cat = pd.get_dummies(X_cat)
-        
-        if (not test):
-            
-            X_cat.drop(['Utilities_NoSeWa','HouseStyle_2.5Fin','Heating_OthW',\
-                        'HouseStyle_2.5Fin','RoofMatl_Membran',\
-                        'RoofMatl_Metal','RoofMatl_Roll','Exterior1st_ImStucc','Exterior1st_Stone','Heating_Floor','GarageQual_Ex'],\
-                        axis = 1 , inplace =True)
-
-            X_cat.index = range(1454)
-        else:
+       
+        if test :
+            #and also add
+            #X_cat.drop('MSSubClass_150',axis = 1,inplace = True)
             X_cat.index = range(1461,2920)
             X_numeric.index = range(1461,2920)
+        else:
+            X_cat.index = range(X_cat.shape[0])
+            X_numeric.index = range(X_numeric.shape[0])
             
         X_cat.sort_index(axis=1,inplace = True)
         X1 = pd.concat([X_numeric,X_cat],axis=1)
