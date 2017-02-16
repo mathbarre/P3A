@@ -8,6 +8,7 @@ Created on Tue Jan 24 18:03:30 2017
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+from scipy.stats import skew
 
 class Preprocess():
     
@@ -17,6 +18,7 @@ class Preprocess():
         pass
     
     def fit(self,X,y):
+        """
         self.mean = dict()
         self.var = dict()
         self.Neigh = ['Blmngtn','Blueste','BrDale','BrkSide','ClearCr','CollgCr',\
@@ -24,8 +26,8 @@ class Preprocess():
          'NAmes','NoRidge','NPkVill','NridgHt','NWAmes','OldTown',\
          'SWISU','Sawyer','SawyerW','Somerst','StoneBr','Timber','Veenker']
         for name in self.Neigh :
-             self.mean[name] = np.nanmean(y.loc[X['Neighborhood'] == name,'SalePrice'])
-             self.var[name] = np.nanvar(y.loc[X['Neighborhood'] == name,'SalePrice'])
+            self.mean[name] = np.nanmean(y.loc[X['Neighborhood'] == name,'SalePrice'])
+            self.var[name] = np.nanvar(y.loc[X['Neighborhood'] == name,'SalePrice'])
     
         self.Zone = ['FV','RH','RL','RM']
         for name in self.Zone :
@@ -38,9 +40,10 @@ class Preprocess():
         for name in self.Func:
             self.mean[name] = np.nanmean(y.loc[X['Functional'] == name,'SalePrice'])
             self.var[name] = np.nanvar(y.loc[X['Functional'] == name,'SalePrice'])
+        """
         return self
     
-    def transform(self,train,X_cat,test = False):
+    def transform(self,train,test = False):
         X = train.copy()
         """
         X['Neighmean'] = 0
@@ -109,7 +112,7 @@ class Preprocess():
             
         X['ExterQual'] = pd.Series(X['ExterQual'],dtype = int)
         X['ExterCond'] = pd.Series(X['ExterCond'],dtype = int)
-        """
+        
         X_numeric = X.select_dtypes(include= ['int','float'])
         
         X_numeric['Yr'] = (X_numeric['YearBuilt']*X_numeric['YearRemodAdd'])
@@ -126,12 +129,21 @@ class Preprocess():
         X_numeric[['OpenPorchSF']] = (np.log(X_numeric[['OpenPorchSF']] + 1))
         X_numeric[['LowQualFinSF']] = (np.log(X_numeric[['LowQualFinSF']] + 1))
         X_numeric.fillna(X_numeric.mean(),inplace = True)
-        
+        """
+        X_numeric_name =X.select_dtypes(include= ['int','float']).columns
+        X.fillna(X.mean(),inplace = True)
+        if not test :
+            self.skewed_feats = X[X_numeric_name].apply(lambda x: skew(x.dropna())) #compute skewness
+            self.skewed_feats = self.skewed_feats[self.skewed_feats > 0.75]
+            self.skewed_feats = self.skewed_feats.index
+
+        X[self.skewed_feats] = np.log1p(X[self.skewed_feats])
         if(not test):
-            self.scaler.fit(X_numeric)
+            self.scaler.fit(X[X_numeric_name])
             
-        X_numeric = pd.DataFrame(self.scaler.transform(X_numeric))
-       
+        X[X_numeric_name] = (self.scaler.transform(X[X_numeric_name]))
+           
+        """
         if test :
             #and also add
             #X_cat.drop('MSSubClass_150',axis = 1,inplace = True)
@@ -143,10 +155,9 @@ class Preprocess():
             
         X_cat.sort_index(axis=1,inplace = True)
         X1 = pd.concat([X_numeric,X_cat],axis=1)
-        return X1
+        """
+        return X
         
         
         
-        
-from sklearn.model_selection import KFold
         
