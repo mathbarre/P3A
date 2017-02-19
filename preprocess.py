@@ -152,9 +152,8 @@ class Preprocess():
             self.scaler.fit(X)
             
         X = pd.DataFrame(self.scaler.transform(X))
-           
+        #X.columns = train.columns.append('OverallQuallMean')
      
-        X.index = X.index+1
         """    
         X_cat.sort_index(axis=1,inplace = True)
         X1 = pd.concat([X_numeric,X_cat],axis=1)
@@ -183,5 +182,6 @@ class Preprocess():
             X.loc[X['Functional'] == name,'Funcvar'] = self.var[name] 
         
         X.fillna(X.mean(),inplace = True)
+        
         return X
         
